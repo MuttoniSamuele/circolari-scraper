@@ -28,13 +28,44 @@ fn main() {
                 Err("Bad arguments".to_string())
             }
         }
-        "search" => Ok(()),
+        "search" => {
+            if args.len() >= 3 {
+                let mut args_clone = args.clone();
+                args_clone.remove(0);
+                args_clone.remove(0);
+                print_search(args_clone.join(" "))
+            } else {
+                Err("Bad arguments".to_string())
+            }
+        }
         "help" => Ok(()),
         cmd => Err(format!("Unknown sub-command \"{}\"", cmd)),
     };
     if let Err(err) = res {
         println!("Error: {}", err);
     }
+}
+
+/// Stampa la prima circolare che contiene la query specificata
+fn print_search(mut query: String) -> Result<(), String> {
+    query = query.to_lowercase();
+    let mut page = 1;
+    'outer_loop: loop {
+        println!("\n[Page {}]", page);
+        let circolari = scrape_circolari(page)?;
+        for c in &circolari {
+            if c.id.to_lowercase().contains(&query)
+                || c.title.to_lowercase().contains(&query)
+                || c.date.to_lowercase().contains(&query)
+            {
+                print_circolare(c);
+                break 'outer_loop;
+            }
+        }
+        println!("Nothing");
+        page += 1;
+    }
+    Ok(())
 }
 
 /// Stampa tutte le circolari da page_min a page_max
@@ -50,15 +81,16 @@ fn print_pages(page_min: u16, page_max: u16) -> Result<(), String> {
 /// Stampa le circolari specificate a schermo
 fn print_circolari(circolari: &Vec<Circolare>) {
     for c in circolari {
-        println!("# {} ({})\n{}\n{}\n", c.id, c.date, c.title, c.link);
+        print_circolare(c);
     }
 }
 
-/// Aggiunge al vettore specificato le circolari nella pagina specificata
-fn append_circolari(circolari: &mut Vec<Circolare>, page: u16) -> Result<(), String> {
-    let mut new_circolari = scrape_circolari(page)?;
-    circolari.append(&mut new_circolari);
-    Ok(())
+/// Stampa le circolare specificata a schermo
+fn print_circolare(circolare: &Circolare) {
+    println!(
+        "# {} ({})\n{}\n{}\n",
+        circolare.id, circolare.date, circolare.title, circolare.link
+    );
 }
 
 /// Fa lo scrape della pagina di circolari specificata e restituisce un vettore di circolari
